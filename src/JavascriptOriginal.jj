@@ -1,0 +1,226 @@
+/**
+ * JavaScriptCompiler.jj
+ */
+
+options {
+  STATIC = false;
+}
+
+PARSER_BEGIN(JavaScriptCompiler)
+
+import java.io.*;
+
+public class JavaScriptCompiler {
+    public static void main(String[] args) {
+		  try {
+        String programa = Arquivo.Read("codigoTeste.txt");
+        new JavaScriptCompiler(new java.io.StringReader(programa)).RUN();
+        System.out.println("\n\nA Sintaxe Correta. Compilado com Sucesso!.");
+      }catch(Throwable e) {
+        System.out.println("\n\nErro na sintaxe: "+e.getMessage());
+      }
+    }
+}
+PARSER_END(JavaScriptCompiler)
+
+SKIP:
+{	" " | "\r" | "\t" | "\n"
+ | <COMENTARIO_SIMPLES: "//" (<OBS>)*>
+ | <COMENTARIOS_LONGO: "/*" ("\n" | "\r" | <OBS>)* "*/" >
+ | <#OBS: ( ~["\"","\\","\n","\r"] | "\\" ( ["n","t","b","r","f","\\","\'","\""] | ( ["\n","\r"] | "\r\n")))*>
+}
+
+//PALAVRAS RESERVADAS
+TOKEN:{
+      <VAR: "var" >
+    | <CONST: "const" >
+    | <LET: "let" >
+    | <CONSTRUCTOR: "constructor" >
+    | <IF: "if" >
+    | <ELSEIF: "else if" >
+    | <ELSE: "else" >
+    | <TRUE: "true" >
+    | <FALSE: "false" >
+    | <RETURN: "return" >
+    | <WHILE: "while" >
+    | <BREAK: "break" >
+    | <CONTINUE: "continue" >
+    | <CLASS: "class" >
+    | <INPUT: "prompt" >
+    | <OUTPUT: "console.log" >
+    | <FUNCTION: "function" >
+    | <ASYNC: "async">
+    | <AWAIT: "await">
+    | <STATIC: "static">
+    | <IMPORT: "import" >
+    | <EXTENDS: "extends" >
+    | <THIS: "this">
+    | <FROM: "from">
+    | <REQUIRE: "require">
+}
+
+// DELIMITADORES
+TOKEN: {
+      <L_PAREN: "(">
+    | <R_PAREN: ")">
+    | <L_BRACE: "{">
+    | <R_BRACE: "}">
+    | <L_BRACKET: "[">
+    | <R_BRACKET: "]">
+    | <SEMI_COLON: ";">
+    | <COMMA: ",">
+    | <DOT: ".">
+}
+
+//OPERADORES
+TOKEN: {
+      < RECEBE: "=" >
+    | < MAIS: "+" >
+    | < MENOS: "-" >
+    | < INCREMENTO: "++" >
+    | < DECREMENTO: "--" >
+    | < MAIOR: ">" >
+    | < MENOR: "<" >
+    | < NEGACAO: "!" >
+    | < IGUAL: "==" >
+    | < TOTALMENTE_IGUAL: "===" >
+    | < MAIOR_IGUAL: "<=" >
+    | < MENOR_IGUAL: ">=" >
+    | < DIFERENTE: "!=" >
+    | < TOTALMENTE_DIFERENTE: "!==" >
+    | < OR: "||" >
+    | < AND: "&&" >
+    | < ASTERISCO: "*" >
+    | < BARRA: "/" >
+    | < PORCENTO: "%" >
+    | < MAIS_IGUAL: "+=" >
+    | < MENOS_IGUAL: "-=" >
+    | < ASTERISCO_IGUAL: "*=" >
+    | < BARRA_IGUAL: "/=" >
+    | < PORCENTO_IGUAL: "%=" >
+}
+
+// IDENTIFICADOR
+TOKEN: {
+  < IDENTIFICADOR: (["a"-"z", "A"-"Z", "_", "$"]
+                   (["a"-"z", "A"-"Z", "0"-"9", "_", "$"])* ) >
+}
+
+TOKEN: {
+      <TIPOS_BASICOS: <NUMBER> | <BOOLEAN> | <STRING_LITERAL>>
+    |  <NUMBER : <DECIMAL> | <FLOATING> >
+    | < #DECIMAL: (["+", "-"])? (["0"-"9"])+ >
+    | < #FLOATING: (["+", "-"])? ( (["0"-"9"]) "." (["0"-"9"])+ ) >
+    | < STRING_LITERAL: "\"" (~["\""] | "\\\"")* "\"" >
+    | < BOOLEAN: ("!")* (<TRUE> | <FALSE>) >
+}
+
+/****************************************
+* ******** GRAMMAR FOR JAVASCRIPT *******
+*****************************************/
+
+void RUN():{} {
+    ( instanciarVariavel() | InstanciarFuncao() | ifElse() | whileRule() | output() | chamadaFuncao() | importDeclaration() | classDeclaration())*
+}
+
+void instanciarVariavel():{} {(<VAR> | <CONST> | <LET>) <IDENTIFICADOR> <RECEBE> (<TIPOS_BASICOS> | input() | require()) (<COMMA> <IDENTIFICADOR> <RECEBE> (<TIPOS_BASICOS> | input() | require()))* (<SEMI_COLON>)?}
+
+void AtribuirVariavel(): {} {
+    <IDENTIFICADOR> (<RECEBE> ((<TIPOS_BASICOS> | input()) | <IDENTIFICADOR>) | (<INCREMENTO> | <DECREMENTO> | expressaoNumericaComAtribuicao()) (<SEMI_COLON>)? )
+   |(<INCREMENTO> | <DECREMENTO> )<IDENTIFICADOR> (<SEMI_COLON>)?
+}
+
+// IMPORT
+void importDeclaration():{} {
+  <IMPORT> <IDENTIFICADOR> <FROM> <STRING_LITERAL> (<SEMI_COLON>)?
+}
+
+void require():{} {
+  <REQUIRE> <L_PAREN> (<STRING_LITERAL> | <IDENTIFICADOR>) <R_PAREN>
+}
+
+void expressaoNumericaComAtribuicao(): {} { (<MAIS_IGUAL>  | <MENOS_IGUAL>  | <ASTERISCO_IGUAL>  | <BARRA_IGUAL> |  <PORCENTO_IGUAL>) (<NUMBER> | <IDENTIFICADOR>)  }
+
+void comparacao(): {} {
+    (
+        (<MENOR_IGUAL> | <MAIOR_IGUAL> | <IGUAL> | <DIFERENTE>) 
+        (<IDENTIFICADOR> | <TIPOS_BASICOS>)
+    )
+}
+
+//INSTANCIAR FUNCAO
+void InstanciarFuncao():{} { (<ASYNC>)? <FUNCTION> <IDENTIFICADOR> <L_PAREN> (listaDeParametros())? <R_PAREN> <L_BRACKET> CorpoDaDeFuncao()  (retornoDaFuncao())? <R_BRACKET>}
+
+void listaDeParametros():{} { <IDENTIFICADOR> (<COMMA> <IDENTIFICADOR>)* }
+
+void retornoDaFuncao() :
+{}
+{
+    <RETURN> (
+        <TIPOS_BASICOS> (comparacao())?
+        | <IDENTIFICADOR> (expressaoNumericaComAtribuicao() | comparacao())
+    ) <SEMI_COLON>
+}
+void CorpoDaDeFuncao():{} {
+  (instanciarVariavel() | AtribuirVariavel() | ifElse() | output() | input() | whileRule())+
+}
+
+void chamadaFuncao():{} {
+  (<CONST> | <VAR> | <LET>)? (<IDENTIFICADOR> <RECEBE>)? (<AWAIT>)? <IDENTIFICADOR> <L_PAREN> (listaDeParametros())? <R_PAREN>
+}
+
+//ESTRUTURA CONDICIONAL
+void ifElse(): {} { <IF> <L_PAREN>  condicao() <R_PAREN> <L_BRACKET> blocoDeDeclaracoesIfElse() <R_BRACKET> ( <ELSEIF> <L_PAREN>  condicao() <R_PAREN> <L_BRACKET> (blocoDeDeclaracoesIfElse())* <R_BRACKET> )* ( <ELSE> <L_BRACKET> blocoDeDeclaracoesIfElse() <R_BRACKET> )? }
+
+void blocoDeDeclaracoesIfElse():{} {
+  (instanciarVariavel() | AtribuirVariavel() | ifElse() | output() | input() (<SEMI_COLON>)? | whileRule() | <BREAK> (<SEMI_COLON>)? | <CONTINUE> (<SEMI_COLON>)?)
+}
+
+//LACO
+void whileRule():{} { <WHILE> <L_PAREN> condicao() <R_PAREN> <L_BRACKET> (blocoDeDeclaracoesLaco())* <R_BRACKET> }
+
+void blocoDeDeclaracoesLaco():{} {
+  (instanciarVariavel() | AtribuirVariavel() | ifElse() | output() | input() (<SEMI_COLON>)? | whileRule() | <BREAK> (<SEMI_COLON>)? | <CONTINUE> (<SEMI_COLON>)?)
+}
+
+void condicao():{} {
+  (<NEGACAO>)* (<IDENTIFICADOR> | <TIPOS_BASICOS>) comparacao() ((<AND> | <OR> ) (<NEGACAO>)* (<IDENTIFICADOR> | <TIPOS_BASICOS>) comparacao())*
+}
+
+//ENTRADA E SAIDA DE DADOS
+void input():{} { <INPUT> <L_PAREN> ( <STRING_LITERAL> | <IDENTIFICADOR>) <R_PAREN> }
+
+void output():{} { <OUTPUT> <L_PAREN> ( <STRING_LITERAL> | <IDENTIFICADOR>)? <R_PAREN> }
+
+// CLASSE
+void classDeclaration():{} {
+  <CLASS> <IDENTIFICADOR> ( <EXTENDS> <IDENTIFICADOR> )? <L_BRACKET> ( classMethodDeclaration() )* <R_BRACKET>
+}
+
+void classMethodDeclaration():{} {
+  (<STATIC>)? (<ASYNC>)? <IDENTIFICADOR> <L_PAREN> ( listaDeParametros() )? <R_PAREN> <L_BRACKET>
+      (corpoFuncaoClasse())+
+  <R_BRACKET>
+}
+
+void corpoFuncaoClasse(): {} {
+  (
+    instanciarVariavel() | AtribuirVariavel() | ifElse() | output() | input() | whileRule() | chamadaFuncao() | (atribuirVariavelClasse() | chamadaFuncaoClasse()) |  retornoFuncaoClasse()
+  )
+}
+
+void atribuirVariavelClasse(): {} {
+  <THIS> <DOT> <IDENTIFICADOR> (<INCREMENTO> | <DECREMENTO> | expressaoNumericaComAtribuicao() | (<RECEBE> ((<TIPOS_BASICOS> | input()) | <IDENTIFICADOR>))) (<SEMI_COLON>)?
+}
+
+void chamadaFuncaoClasse():{} { (<CONST> | <VAR> | <LET> | <THIS> <DOT>)? (<IDENTIFICADOR> <RECEBE>)? (<AWAIT>)? <IDENTIFICADOR> <L_PAREN> (listaDeParametrosClasse())? <R_PAREN> }
+
+void retornoFuncaoClasse():{}{
+    <RETURN> (
+        <TIPOS_BASICOS> (comparacao())?
+        | <IDENTIFICADOR> (expressaoNumericaComAtribuicao() | comparacao())
+        | <THIS> <DOT> <IDENTIFICADOR>
+    ) <SEMI_COLON>
+}
+
+void listaDeParametrosClasse():{} { (<THIS> <DOT>)? <IDENTIFICADOR> (<COMMA> (<THIS> <DOT>)? <IDENTIFICADOR>)* }
