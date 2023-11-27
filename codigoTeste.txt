@@ -1,33 +1,17 @@
-//const a = require("asdawd")
+import java.util;
 
-import teste from asdw
+public class TesteClass {
+    public static String nome;
+    protected float dinheiro;
+    private static int numerico;
 
-console.log()
-
-let aqui = 0
-
-console.log(_)
-
-prompt()
-
-function a(){
-
-}
-
-async function a(){
-    return a;
-}
-
-while(a < 2){
-    a = 1
-}
-
-class a {
-    cuntructor(){
-        this.asd = 2.578
+    public static void main(String[] args) {
+        Scanner();
+        System.out.println("Hello world");
     }
 
-    async _func(){
-        console.log()
+    public void imprimir(String a) {
+        return System.out.println(a);
+
     }
 }
